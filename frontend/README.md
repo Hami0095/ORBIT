@@ -1,73 +1,138 @@
-# React + TypeScript + Vite
+# ORBIT Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The frontend application for ORBIT – AI Task Orchestrator. This is a modern React application built with TypeScript and Vite, providing the user interface for managing goals, tasks, teams, and orchestrating AI-powered workflows.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+*   **React 19** – UI library
+*   **TypeScript** – Type-safe JavaScript
+*   **Vite** – Fast build tool and dev server
+*   **ESLint** – Code linting and quality
 
-## React Compiler
+## Project Structure
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+/frontend
+  /src
+    App.tsx          # Main application component
+    main.tsx         # Application entry point
+    index.css        # Global styles
+    App.css          # App-specific styles
+    /assets          # Static assets (images, icons)
+  /public            # Public assets
+  index.html         # HTML template
+  vite.config.ts     # Vite configuration
+  tsconfig.json      # TypeScript configuration
+  package.json       # Dependencies and scripts
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Setup Instructions
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Prerequisites
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+*   **Node.js 18+** and **npm** (or **yarn**/ **pnpm**)
+
+### Installation
+
+1. Navigate to the frontend directory:
+```bash
+cd frontend
 ```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+## Development
+
+### Start Development Server
+
+Run the development server with hot module replacement (HMR):
+
+```bash
+npm run dev
+```
+
+The application will be available at `http://localhost:5173` (or the next available port).
+
+### Build for Production
+
+Build the application for production:
+
+```bash
+npm run build
+```
+
+The production build will be output to the `dist/` directory.
+
+### Preview Production Build
+
+Preview the production build locally:
+
+```bash
+npm run preview
+```
+
+### Linting
+
+Run ESLint to check code quality:
+
+```bash
+npm run lint
+```
+
+## Configuration
+
+### TypeScript
+
+The project uses TypeScript with strict mode enabled. Configuration files:
+- `tsconfig.json` – Main TypeScript configuration (references app and node configs)
+- `tsconfig.app.json` – Application-specific TypeScript settings
+- `tsconfig.node.json` – Node.js/Vite configuration TypeScript settings
+
+### Vite
+
+Vite configuration is in `vite.config.ts`. The setup includes:
+- React plugin for Fast Refresh
+- Development server configuration
+- Build optimization
+
+### ESLint
+
+ESLint is configured with:
+- TypeScript ESLint rules
+- React Hooks linting
+- React Refresh support
+
+## Integration with Backend
+
+The frontend is designed to communicate with the ORBIT backend API. The backend typically runs on `http://localhost:8001` (see main project README for backend setup).
+
+API endpoints are available at:
+- Swagger UI: `http://localhost:8001/docs`
+- ReDoc: `http://localhost:8001/redoc`
+
+## Features
+
+The frontend provides interfaces for:
+- **Goals Management** – Create and manage AI-powered goals
+- **Task Orchestration** – View and manage tasks generated by AI agents
+- **Team Management** – Manage team members and assignments
+- **Orchestration Dashboard** – Monitor AI agent pipeline execution
+
+## Development Notes
+
+- The project uses React 19 with modern hooks and patterns
+- TypeScript strict mode is enabled for type safety
+- Hot Module Replacement (HMR) is enabled for fast development
+- The build output is optimized for production deployment
+
+## Future Enhancements
+
+- API client setup for backend communication
+- State management (Redux, Zustand, or React Context)
+- Routing (React Router)
+- UI component library integration
+- Authentication and authorization flows
+- Real-time updates via WebSockets
