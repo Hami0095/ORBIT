@@ -13,6 +13,7 @@ async def init_db():
 if __name__ == "__main__":
     # Check if we should init db (e.g., if sqlite is used)
     from backend.app.core.config import settings
+    print(f"📡 Using Database URL: {settings.async_database_url}")
     if settings.async_database_url.startswith("sqlite"):
         asyncio.run(init_db())
     
