@@ -19,6 +19,10 @@ if (!(Test-Path ".env")) {
     Copy-Item .env.example .env
 }
 
+# 4. Initialize Database
+Write-Host "💽 Initializing database..." -ForegroundColor Yellow
+& .\venv\Scripts\python.exe backend/scripts/init_db.py
+
 Write-Host "✅ Setup Complete!" -ForegroundColor Green
 Write-Host "💡 To start the server, run: .\venv\Scripts\uvicorn.exe backend.app.main:app --reload" -ForegroundColor Magenta
 Write-Host "⚠️  Note: Ensure you have a local PostgreSQL running on localhost:5432" -ForegroundColor Red

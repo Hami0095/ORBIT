@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Target,
     CheckCircle2,
     Clock,
     Zap,
     ChevronRight,
-    Plus
+    Plus,
+    Users
 } from 'lucide-react';
 import NeumorphicBox from '../components/common/NeumorphicBox';
+import { goalService, taskService, teamService } from '../services/api';
+import { useNavigate } from 'react-router-dom';
 
 const StatCard = ({ label, value, icon: Icon, colorClass }: { label: string, value: string, icon: any, colorClass: string }) => (
     <NeumorphicBox variant="flat" className="p-6">
@@ -24,89 +27,129 @@ const StatCard = ({ label, value, icon: Icon, colorClass }: { label: string, val
 );
 
 const Dashboard: React.FC = () => {
+    const [stats, setStats] = useState({ goals: 0, tasks: 0, completed: 0, team: 0 });
+    const [recentGoals, setRecentGoals] = useState<any[]>([]);
+    const [teamMembers, setTeamMembers] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const navigate = useNavigate();
+
+    const fetchDashboardData = async () => {
+        setIsLoading(true);
+        try {
+            const [goals, tasks, team] = await Promise.all([
+                goalService.getGoals(),
+                taskService.getTasks(),
+                teamService.getTeam()
+            ]);
+
+            const completed = tasks.filter((t: any) => t.status === 'DONE').length;
+
+            setStats({
+                goals: goals.length,
+                tasks: tasks.length,
+                completed,
+                team: team.length
+            });
+
+            setRecentGoals(goals.slice(0, 3));
+            setTeamMembers(team.slice(0, 3));
+        } catch (err) {
+            console.error("Dashboard sync error", err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, []);
+
     return (
         <div className="space-y-10">
             {/* Top Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-3xl font-black text-slate-700 tracking-tight">Intelligence Dashboard</h2>
-                    <p className="text-slate-500 font-medium">System status: <span className="text-green-500">All Agents Online</span></p>
+                    <h2 className="text-3xl font-black text-slate-700 tracking-tight">Intelligence Overview</h2>
+                    <p className="text-slate-500 font-medium">System status: <span className="text-green-500">Live Sync Active</span></p>
                 </div>
-                <button className="flex items-center space-x-2 px-6 py-3 rounded-2xl font-bold text-blue-600 neumorphic-flat hover:neumorphic-pressed transition-all">
+                <button
+                    onClick={() => navigate('/goals')}
+                    className="flex items-center space-x-2 px-6 py-3 rounded-2xl font-bold text-blue-600 neumorphic-flat hover:neumorphic-pressed transition-all"
+                >
                     <Plus size={20} />
-                    <span>Initialize Goal</span>
+                    <span>New Initiative</span>
                 </button>
             </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard label="Active Goals" value="12" icon={Target} colorClass="text-blue-500" />
-                <StatCard label="Completed" value="154" icon={CheckCircle2} colorClass="text-green-500" />
-                <StatCard label="Efficiency" value="98%" icon={Zap} colorClass="text-orange-500" />
-                <StatCard label="Saved Time" value="48h" icon={Clock} colorClass="text-purple-500" />
+                <StatCard label="Active Goals" value={stats.goals.toString()} icon={Target} colorClass="text-blue-500" />
+                <StatCard label="Tasks Queue" value={stats.tasks.toString()} icon={Zap} colorClass="text-orange-500" />
+                <StatCard label="Completed" value={stats.completed.toString()} icon={CheckCircle2} colorClass="text-green-500" />
+                <StatCard label="Team Size" value={stats.team.toString()} icon={Users} colorClass="text-purple-500" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Feed */}
+                {/* Recent Initiatives */}
                 <div className="lg:col-span-2 space-y-6">
                     <NeumorphicBox variant="card" className="p-8">
                         <div className="flex items-center justify-between mb-8">
-                            <h3 className="text-xl font-bold text-slate-700">Recent Orchestrations</h3>
-                            <button className="text-sm font-bold text-blue-500 hover:underline">View All</button>
+                            <h3 className="text-xl font-bold text-slate-700">Recent Initiatives</h3>
+                            <button
+                                onClick={() => navigate('/goals')}
+                                className="text-sm font-bold text-blue-500 hover:underline"
+                            >
+                                Manage All
+                            </button>
                         </div>
 
                         <div className="space-y-4">
-                            {[
-                                { title: 'Migrate Legacy DB to Postgres', time: '2h ago', status: 'IN PROGRESS', color: 'bg-blue-500' },
-                                { title: 'Cloud Infrastructure Audit', time: '5h ago', status: 'COMPLETED', color: 'bg-green-500' },
-                                { title: 'Security Patch Deployment', time: '1d ago', status: 'TODO', color: 'bg-amber-500' },
-                            ].map((goal, i) => (
-                                <div key={i} className="flex items-center justify-between p-5 rounded-2xl neumorphic-flat hover:neumorphic-pressed transition-all group">
+                            {recentGoals.map((goal, i) => (
+                                <div key={i} className="flex items-center justify-between p-5 rounded-2xl neumorphic-flat hover:neumorphic-pressed transition-all group cursor-pointer" onClick={() => navigate('/goals')}>
                                     <div className="flex items-center space-x-4">
-                                        <div className={`w-3 h-3 rounded-full ${goal.color}`} />
+                                        <div className={`w-3 h-3 rounded-full ${goal.status === 'COMPLETED' ? 'bg-green-500' : 'bg-blue-500 animate-pulse'}`} />
                                         <div>
                                             <h4 className="font-bold text-slate-700">{goal.title}</h4>
-                                            <p className="text-xs text-slate-400 font-medium">Initiated {goal.time}</p>
+                                            <p className="text-xs text-slate-400 font-medium">Status: {goal.status}</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center space-x-4">
-                                        <span className={`hidden sm:inline text-[10px] font-black tracking-widest px-3 py-1 rounded-full text-white ${goal.color}`}>
-                                            {goal.status}
-                                        </span>
-                                        <ChevronRight size={18} className="text-slate-300 group-hover:text-slate-600 transition-colors" />
-                                    </div>
+                                    <ChevronRight size={18} className="text-slate-300 group-hover:text-slate-600 transition-colors" />
                                 </div>
                             ))}
+                            {recentGoals.length === 0 && (
+                                <p className="text-center text-slate-400 py-10 font-medium">No results found.</p>
+                            )}
                         </div>
                     </NeumorphicBox>
                 </div>
 
-                {/* Side Panel */}
+                {/* Team Snapshot */}
                 <div className="space-y-8">
                     <NeumorphicBox variant="card" className="p-8">
-                        <h3 className="text-xl font-bold text-slate-700 mb-8">Team Load</h3>
+                        <h3 className="text-xl font-bold text-slate-700 mb-8">Agent Snapshot</h3>
                         <div className="space-y-6">
-                            {[
-                                { name: 'Sarah Jenkins', role: 'Arch Agent', load: 85 },
-                                { name: 'Michael Chen', role: 'Dev Agent', load: 45 },
-                                { name: 'Emma Wilson', role: 'QA Agent', load: 30 },
-                            ].map((member, i) => (
+                            {teamMembers.map((member, i) => (
                                 <div key={i} className="space-y-3">
                                     <div className="flex justify-between items-end">
                                         <div>
                                             <p className="font-bold text-slate-700 text-sm">{member.name}</p>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{member.role}</p>
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                                {Object.keys(member.skill_set || {}).slice(0, 2).join(' / ') || 'Generalist'}
+                                            </p>
                                         </div>
-                                        <p className="text-xs font-black text-slate-600">{member.load}%</p>
+                                        <p className="text-xs font-black text-slate-600">{member.availability_hours}h</p>
                                     </div>
                                     <div className="h-3 rounded-full neumorphic-inset overflow-hidden p-0.5">
                                         <div
-                                            className="h-full rounded-full bg-blue-500 transition-all duration-1000"
-                                            style={{ width: `${member.load}%` }}
+                                            className="h-full rounded-full bg-blue-500"
+                                            style={{ width: `${Math.min(100, (member.availability_hours / 40) * 100)}%` }}
                                         />
                                     </div>
                                 </div>
                             ))}
+                            {teamMembers.length === 0 && (
+                                <p className="text-center text-slate-400 py-10 font-medium">No members added.</p>
+                            )}
                         </div>
                     </NeumorphicBox>
                 </div>

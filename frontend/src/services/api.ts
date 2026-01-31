@@ -73,9 +73,24 @@ export const taskService = {
     }
 };
 
+export const teamService = {
+    async getTeam() {
+        const response = await api.get('/team/');
+        return response.data;
+    },
+    async addMember(data: any) {
+        const response = await api.post('/team/', data);
+        return response.data;
+    }
+};
+
 export const orchestrateService = {
     async startOrchestration(goalId: number) {
         const response = await api.post(`/orchestrate/start/${goalId}`);
+        return response.data;
+    },
+    async startWithPrompt(goalText: string) {
+        const response = await api.post('/orchestrate/start', { goal_text: goalText });
         return response.data;
     }
 };

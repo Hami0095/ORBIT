@@ -2,7 +2,9 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
 import Dashboard from '../pages/Dashboard';
-import { Goals, Tasks, Team } from '../pages/Placeholders';
+import Goals from '../pages/Goals';
+import Tasks from '../pages/Tasks';
+import Team from '../pages/Team';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { useAuth } from '../hooks/useAuth';
 

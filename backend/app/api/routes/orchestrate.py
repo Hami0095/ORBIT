@@ -14,7 +14,7 @@ class OrchestrationRequest(BaseModel):
 router = APIRouter()
 
 @router.post("/start")
-async def start_orchestration(
+async def start_orchestration_new(
     *,
     db: AsyncSession = Depends(deps.get_db),
     request: OrchestrationRequest,
@@ -22,13 +22,35 @@ async def start_orchestration(
 ) -> Any:
     # 1. Save goal
     goal_in = GoalCreate(
-        title=request.goal_text[:50] + "...",
+        title=request.goal_text[:47] + "...",
         description=request.goal_text
     )
     goal = await goal_repo.create_with_owner(db, obj_in=goal_in, owner_id=current_user.id)
     
     # 2. Call orchestrator
     result = await orbit_orchestrator.orchestrate(db, goal_id=goal.id, goal_text=request.goal_text)
+    
+    return {
+        "goal_id": goal.id,
+        "orchestration_result": result
+    }
+
+@router.post("/start/{goal_id}")
+async def start_orchestration_existing(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    goal_id: int,
+    current_user: User = Depends(deps.get_current_user)
+) -> Any:
+    # 1. Fetch goal
+    goal = await goal_repo.get(db, id=goal_id)
+    if not goal:
+        return {"status": "error", "message": "Goal not found."}
+    if goal.created_by != current_user.id:
+         return {"status": "error", "message": "Access denied."}
+
+    # 2. Call orchestrator
+    result = await orbit_orchestrator.orchestrate(db, goal_id=goal.id, goal_text=goal.description)
     
     return {
         "goal_id": goal.id,
