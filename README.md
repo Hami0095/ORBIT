@@ -78,3 +78,34 @@ The system follows a sequential orchestration flow:
 ## IBM watsonx Integration
 
 The system is designed to be "orchestration-ready". The agents in `backend/app/agents/` are thin wrappers that will call IBM watsonx Orchestrate skills via the `WatsonxService`.
+AI Task Management Assistant
+
+This project is a proof-of-concept Agentic AI solution built during the IBM Dev Day AI Demystified Hackathon. It aims to simplify and optimize task management for managers and supervisors by using AI to organize work, connect tools, and automate actionable insights.
+
+Features
+
+End-to-End Task Processing Flow – Automates task tracking, prioritization, and completion in three streamlined steps.
+
+Interactive User Interface – Built with React 19, TypeScript, and Vite for a fast, responsive experience.
+
+Backend & API – Powered by Python 3.11+, FastAPI, PostgreSQL, SQLAlchemy ORM, Alembic, Pydantic, Docker & Docker Compose.
+
+AI Integration – Utilizes IBM watsonx Orchestrate for agentic AI workflows and process automation.
+
+Figma Prototype
+
+The interactive UI/UX prototype demonstrating the project workflow and user interface can be viewed here:
+https://july-slack-72906351.figma.site
+ – Click to explore the design and interactions.
+
+Judging Criteria Alignment
+
+This project was designed with the hackathon judges in mind:
+
+Completeness & Feasibility – Fully thought-out AI-driven solution with functional backend integration.
+
+Creativity & Innovation – Unique application of agentic AI for task management and workflow optimization.
+
+Design & Usability – Intuitive UI and seamless user experience.
+
+Effectiveness & Efficiency – Addresses a high-priority managerial challenge with measurable impact and potential for scalability.
