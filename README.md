@@ -78,3 +78,5 @@ The system follows a sequential orchestration flow:
 ## IBM watsonx Integration
 
 The system is designed to be "orchestration-ready". The agents in `backend/app/agents/` are thin wrappers that will call IBM watsonx Orchestrate skills via the `WatsonxService`.
+
+Link of presentation: https://july-slack-72906351.figma.site/
