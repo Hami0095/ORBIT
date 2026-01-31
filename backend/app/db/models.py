@@ -37,6 +37,7 @@ class TeamMember(Base):
     skill_set = Column(JSON)  # e.g., {"python": 5, "devops": 4}
     availability_hours = Column(Integer, default=40)
     workload_score = Column(Float, default=0.0)
+    manager_id = Column(Integer, ForeignKey("users.id"))
 
 class Goal(Base):
     __tablename__ = "goals"

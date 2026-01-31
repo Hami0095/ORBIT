@@ -15,7 +15,7 @@ async def create_team_member(
     team_in: TeamMemberCreate,
     current_user: User = Depends(deps.get_current_user)
 ) -> Any:
-    return await team_repo.create(db, obj_in=team_in)
+    return await team_repo.create_with_manager(db, obj_in=team_in, manager_id=current_user.id)
 
 @router.get("/", response_model=List[TeamMember])
 async def read_team(
@@ -24,4 +24,4 @@ async def read_team(
     limit: int = 100,
     current_user: User = Depends(deps.get_current_user)
 ) -> Any:
-    return await team_repo.get_multi(db, skip=skip, limit=limit)
+    return await team_repo.get_multi_by_manager(db, manager_id=current_user.id, skip=skip, limit=limit)
