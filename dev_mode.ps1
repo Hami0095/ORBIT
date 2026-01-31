@@ -24,4 +24,4 @@ if (!(Test-Path ".env")) {
 
 Write-Host "✅ Dev Environment Ready!" -ForegroundColor Green
 Write-Host "💡 To start the server in Dev Mode (SQLite), run: .\venv\Scripts\python.exe dev.py" -ForegroundColor Magenta
-Write-Host "🌐 API Docs: http://127.0.0.1:8000/docs" -ForegroundColor Cyan
+Write-Host "🌐 API Docs: http://127.0.0.1:8001/docs" -ForegroundColor Cyan

@@ -26,7 +26,7 @@ async def register(
         )
     return await user_repo.create(db, obj_in=user_in)
 
-@router.post("/login", response_model=Token)
+@router.post("/login/access-token", response_model=Token)
 async def login(
     db: AsyncSession = Depends(deps.get_db),
     form_data: OAuth2PasswordRequestForm = Depends()

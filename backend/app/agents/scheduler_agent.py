@@ -12,37 +12,81 @@ class SchedulerAgent(BaseAgent):
         Uses load-balancing logic (lowest workload score first).
         """
         tasks = payload.get("tasks", [])
-        team_data = payload.get("team", []) # Expecting list of dicts/DTOs, not ORMs
+        team_data = payload.get("team", []) 
         
         logger.info(f"SchedulerAgent: Assigning {len(tasks)} tasks among {len(team_data)} team members.")
 
+        # If no tasks, return early
+        if not tasks:
+            return {"tasks": []}
+
+        scheduled_tasks = tasks  # Default to modification in place
+
         try:
             # 1. Attempt watsonx scheduling
-            response = await watsonx_service.run_agent(
-                agent_id="orbit_scheduler_v1",
-                payload={"tasks": tasks, "team": team_data}
-            )
-            if "scheduled_tasks" in response:
-                return {"tasks": response["scheduled_tasks"]}
+            # Only try if we have team members
+            if team_data:
+                response = await watsonx_service.run_agent(
+                    agent_id="orbit_scheduler_v1",
+                    payload={"tasks": tasks, "team": team_data}
+                )
+                if "scheduled_tasks" in response and response["scheduled_tasks"]:
+                    return {"tasks": response["scheduled_tasks"]}
+            
         except Exception as e:
             logger.error(f"SchedulerAgent: watsonx call failed: {str(e)}")
+            # Continue to fallback
 
-        # 2. Smart assignment fallback
-        # Sort team by workload_score ascending (lowest workload first)
-        sorted_team = sorted(team_data, key=lambda x: x.get("workload_score", 0.0))
-        
-        for i, task in enumerate(tasks):
-            if sorted_team:
-                # Basic load balancer: pick one from the sorted list
-                # For fallback, we cycle through them but prioritized by load
-                member = sorted_team[i % len(sorted_team)]
-                task["assigned_to"] = member.get("id")
-                task["assigned_name"] = member.get("name")
-            else:
+        # 2. Smart assignment fallback (Skill-based matching)
+        if not team_data:
+            logger.warning("SchedulerAgent: No team members available for assignment.")
+            for task in scheduled_tasks:
                 task["assigned_to"] = None
-                
-            task["estimated_hours"] = 2.0 # Default fallback estimate
+                task["assigned_name"] = "Unassigned"
+                task["estimated_hours"] = task.get("estimated_hours", 2.0)
+            return {"tasks": scheduled_tasks}
+
+        # Helper to score a member against a task
+        def score_member(member, task):
+            score = 0
+            # text to search: title + description
+            text = (task.get("title", "") + " " + task.get("description", "")).lower()
             
-        return {"tasks": tasks}
+            skills = member.get("skills", {}) or {} # Handle None
+            
+            # 1. Skill Match Score
+            for skill_name, skill_level in skills.items():
+                if skill_name.lower() in text:
+                    # deeply reward matching skills (level 1-5) * weight
+                    score += (skill_level * 10)
+            
+            # 2. Workload Penalty (Small check to prefer available people)
+            # Higher workload = lower score benefit
+            workload = member.get("workload_score", 0.0)
+            score -= (workload * 5)
+            
+            return score
+
+        # Assign each task to the best fit
+        for task in scheduled_tasks:
+            # Sort candidates by Score (Desc), then Workload (Asc)
+            # We shuffle slightly or just sort stable? stable sort is fine.
+            # We use negative workload as tie breaker for descending sort if we wanted, 
+            # but simpler to just calc a single float score.
+            
+            best_member = max(team_data, key=lambda m: score_member(m, task))
+            
+            task["assigned_to"] = best_member.get("id")
+            task["assigned_name"] = best_member.get("name")
+            
+            # Dynamic estimate based on match? 
+            # If score is high -> lower time? Keep it simple: 2.0
+            task["estimated_hours"] = 2.0
+            
+            # Update member workload virtually to prevent overloading same person in one batch
+            # (Simple greedy approach)
+            best_member["workload_score"] = best_member.get("workload_score", 0.0) + 0.1
+
+        return {"tasks": scheduled_tasks}
 
 scheduler_agent = SchedulerAgent()

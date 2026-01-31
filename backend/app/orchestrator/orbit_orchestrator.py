@@ -1,5 +1,6 @@
 import logging
 from typing import Dict, Any, List, Optional
+from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app.agents.planner_agent import planner_agent
 from backend.app.agents.prioritizer_agent import prioritizer_agent
@@ -24,15 +25,35 @@ class OrbitOrchestrator:
     async def orchestrate(self, db: AsyncSession, goal_id: int, goal_text: str) -> Dict[str, Any]:
         logger.info(f"Orchestrator: Initializing pipeline for Goal ID: {goal_id}")
 
-        # 0. Context & State Initialization
+        # 0. Context & State Initialization with Date Awareness
+        today = datetime.now()
+        
+        # Calculate days until Friday (4 = Friday in weekday())
+        days_until_friday = (4 - today.weekday()) % 7
+        # If today is Friday or later in the week, target next Friday
+        if days_until_friday == 0 and today.weekday() == 4:
+            # Today is Friday, target this Friday
+            end_of_week = today
+        elif today.weekday() >= 4:
+            # Saturday or Sunday, target next Friday
+            end_of_week = today + timedelta(days=(4 - today.weekday() + 7))
+        else:
+            # Monday-Thursday, target this Friday
+            end_of_week = today + timedelta(days=days_until_friday)
+        
         context = {
             "goal_id": goal_id,
             "goal_text": goal_text,
+            "start_date": today.strftime("%Y-%m-%d"),
+            "end_date": end_of_week.strftime("%Y-%m-%d"),
+            "week_description": f"Week of {today.strftime('%B %d')} to {end_of_week.strftime('%B %d, %Y')}",
             "tasks": [],
             "execution": {},
             "insight": {},
             "errors": []
         }
+        
+        logger.info(f"Orchestrator: Planning for {context['week_description']}")
 
         # Retrieve goal object for status updates
         goal = await goal_repo.get(db, id=goal_id)
@@ -67,6 +88,8 @@ class OrbitOrchestrator:
             }
 
         except Exception as e:
+            import sys
+            print(f"CRITICAL ERROR: {e}", file=sys.stderr)
             logger.error(f"Orchestrator: Pipeline failure - {str(e)}")
             await goal_repo.update(db, db_obj=goal, obj_in={"status": GoalStatus.FAILED})
             return {
@@ -78,7 +101,12 @@ class OrbitOrchestrator:
     async def _run_planner_stage(self, db: AsyncSession, context: Dict[str, Any]):
         context["current_stage"] = "Planning"
         logger.debug("Orchestrator Stage: Planning")
-        output = await planner_agent.run({"goal_text": context["goal_text"]})
+        output = await planner_agent.run({
+            "goal_text": context["goal_text"],
+            "start_date": context["start_date"],
+            "end_date": context["end_date"],
+            "week_description": context["week_description"]
+        })
         context["tasks"] = output.get("tasks", [])
         await agent_log_repo.create(db, agent_name="Planner", action="plan", payload=output)
 
@@ -99,7 +127,13 @@ class OrbitOrchestrator:
         # Convert ORM team members to plain dict DTOs for the agent
         team_members = await team_repo.get_multi(db)
         team_dtos = [
-            {"id": m.id, "name": m.name, "role": m.role, "workload_score": 0.5} # Mock score for now
+            {
+                "id": m.id, 
+                "name": m.name, 
+                "skills": m.skill_set, 
+                "availability_hours": m.availability_hours,
+                "workload_score": m.workload_score if hasattr(m, "workload_score") else 0.0
+            }
             for m in team_members
         ]
         
@@ -113,13 +147,23 @@ class OrbitOrchestrator:
     async def _persist_tasks(self, db: AsyncSession, context: Dict[str, Any]):
         logger.debug("Orchestrator: Persisting tasks to database")
         for task_data in context["tasks"]:
+            # Parse due_date if it exists in task_data
+            due_date = None
+            if task_data.get("due_date"):
+                try:
+                    due_date = datetime.fromisoformat(task_data["due_date"])
+                except Exception:
+                    # Fallback to end_date if parsing fails
+                    due_date = datetime.fromisoformat(context["end_date"])
+
             task_in = TaskCreate(
                 goal_id=context["goal_id"],
                 title=task_data["title"],
                 description=task_data["description"],
                 priority_score=task_data.get("priority_score", 0.0),
                 assigned_to=task_data.get("assigned_to"),
-                estimated_hours=task_data.get("estimated_hours", 0.0)
+                estimated_hours=task_data.get("estimated_hours", 0.0),
+                due_date=due_date
             )
             await task_repo.create(db, obj_in=task_in)
 

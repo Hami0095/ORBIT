@@ -11,7 +11,7 @@ from backend.app.repositories.user_repository import user_repo
 from backend.app.schemas.token import TokenPayload
 
 reusable_oauth2 = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.API_V1_STR}/auth/login"
+    tokenUrl=f"{settings.API_V1_STR}/auth/login/access-token"
 )
 
 async def get_db() -> Generator:
